@@ -9,6 +9,12 @@ interface AppState {
   stats: DashboardStats
   tableLoading: boolean
 
+  // Pagination
+  currentPage: number
+  totalPages: number
+  totalRecords: number
+  perPage: number
+
   // Filter state
   filter: FilterState
 
@@ -18,6 +24,9 @@ interface AppState {
   // Actions
   setPoItems: (items: POItem[]) => void
   setTableLoading: (loading: boolean) => void
+  setCurrentPage: (page: number) => void
+  setTotalPages: (total: number, records: number) => void
+  setPerPage: (perPage: number) => void
   setFilter: (filter: Partial<FilterState>) => void
   setActiveTab: (tab: TabType) => void
   resetFilter: () => void
@@ -40,12 +49,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   poItems: mockPOItems,
   stats: dashboardStats,
   tableLoading: false,
+  currentPage: 1,
+  totalPages: 1,
+  totalRecords: 0,
+  perPage: 20,
   filter: defaultFilter,
   uploadingFiles: {},
 
   setPoItems: (items) => set({ poItems: items }),
 
   setTableLoading: (loading) => set({ tableLoading: loading }),
+
+  setCurrentPage: (page) => set({ currentPage: page }),
+
+  setTotalPages: (total, records) => set({ totalPages: total, totalRecords: records }),
+
+  setPerPage: (perPage) => set({ perPage, currentPage: 1 }),
 
   setFilter: (filter) =>
     set((state) => ({ filter: { ...state.filter, ...filter } })),

@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Layout from "../components/layout/Layout";
 import FilterBar from "../components/dashboard/FilterBar";
 import TabBar from "../components/dashboard/TabBar";
@@ -52,7 +52,7 @@ function mapCustomerDocToPoItem(doc: CustomerDoc): POItem {
 }
 
 export default function Dashboard() {
-  const { setActiveTab, setPoItems, setTableLoading } = useAppStore();
+  const { setActiveTab, setPoItems, setTableLoading, setTotalPages, currentPage, perPage } = useAppStore();
   const [stageCount, setStageCount] = useState<StageCountResult | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -68,23 +68,33 @@ export default function Dashboard() {
         setStatsLoading(false);
       }
     };
-
-    const fetchListDoc = async () => {
-      try {
-        setTableLoading(true);
-        const data = await jagotaApi.listDoc({ P_STAFF_CODE: jagotaApi.getStaffCode() });
-        const items = (data.CUSTOMERS ?? []).map(mapCustomerDocToPoItem);
-        setPoItems(items);
-      } catch (error) {
-        console.error("Failed to fetch list doc:", error);
-      } finally {
-        setTableLoading(false);
-      }
-    };
-
     fetchStageCount();
-    fetchListDoc();
   }, []);
+
+  const fetchListDoc = useCallback(async (page: number) => {
+    try {
+      setTableLoading(true);
+      const data = await jagotaApi.listDoc({
+        P_STAFF_CODE: jagotaApi.getStaffCode(),
+        P_PAGE: page,
+        P_PER_PAGE: perPage,
+      });
+      const items = (data.CUSTOMERS ?? []).map(mapCustomerDocToPoItem);
+      setPoItems(items);
+      setTotalPages(
+        parseInt(data.TOTAL_PAGE ?? "1", 10),
+        parseInt(data.TOTAL_FOUND ?? "0", 10)
+      );
+    } catch (error) {
+      console.error("Failed to fetch list doc:", error);
+    } finally {
+      setTableLoading(false);
+    }
+  }, [perPage, setTableLoading, setPoItems, setTotalPages]);
+
+  useEffect(() => {
+    fetchListDoc(currentPage);
+  }, [currentPage, fetchListDoc]);
 
   const pending = stageCount?.PENDING?.[0];
   const request = stageCount?.REQUEST?.[0];
