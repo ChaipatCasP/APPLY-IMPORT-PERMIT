@@ -1,16 +1,58 @@
 import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import Layout from "../components/layout/Layout";
-import StatCard from "../components/dashboard/StatCard";
 import FilterBar from "../components/dashboard/FilterBar";
 import TabBar from "../components/dashboard/TabBar";
 import POTable from "../components/dashboard/POTable";
 import { useAppStore } from "../store/useAppStore";
 import { jagotaApi } from "../services/jagotaApiService";
-import type { StageCountResult } from "../services/jagotaApiService";
+import type { StageCountResult, CustomerDoc } from "../services/jagotaApiService";
+import type { POItem, POStatus, TempType } from "../types";
+
+function mapStage(stage: string): POStatus {
+  switch (stage) {
+    case "Pending Apply": return "Waiting PI";
+    case "Waiting R1/1": return "Waiting R1/1";
+    case "Expiry Alert": return "Expiry Alert";
+    case "Completed": return "Completed";
+    case "Received": return "Received";
+    default: return "Waiting PI";
+  }
+}
+
+function mapCustomerDocToPoItem(doc: CustomerDoc): POItem {
+  return {
+    id: doc.PO_DOC || `${doc.DOC_BOOK}-${doc.DOC_NO}`,
+    poNumber: doc.PO_DOC,
+    date: doc.PO_DATE,
+    supplier: doc.SUPP_NAME,
+    supplierCode: doc.SUPP_CODE,
+    port: doc.PORT_OF_ORIGIN,
+    portAgent: doc.SHIPPER_SUP_NAME,
+    estNo: "",
+    quantity: parseFloat(doc.TOTAL) || 0,
+    permitTypes: [],
+    countryTemp: doc.COUNTRY_ORIGIN,
+    freight: doc.TRANSPORT_MODE === "Sea" ? "Sea Freight" : "Air Freight",
+    etd: doc.ETD,
+    eta: doc.ETA,
+    createDate: doc.CREATION_DATE,
+    requestDocNoDate: undefined,
+    status: mapStage(doc.STAGE),
+    origin: doc.COUNTRY_ORIGIN,
+    temp: doc.PRODUCT_TEMPERATURE as TempType,
+    buyer: doc.BUYER,
+    buyerCode: "",
+    poApprovalDate: doc.PO_APP_DATE,
+    products: [],
+    permitTypesDetail: [],
+    estDetails: [],
+    uploadedFiles: [],
+  };
+}
 
 export default function Dashboard() {
-  const { setActiveTab } = useAppStore();
+  const { setActiveTab, setPoItems, setTableLoading } = useAppStore();
   const [stageCount, setStageCount] = useState<StageCountResult | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -26,7 +68,22 @@ export default function Dashboard() {
         setStatsLoading(false);
       }
     };
+
+    const fetchListDoc = async () => {
+      try {
+        setTableLoading(true);
+        const data = await jagotaApi.listDoc({ P_STAFF_CODE: jagotaApi.getStaffCode() });
+        const items = (data.CUSTOMERS ?? []).map(mapCustomerDocToPoItem);
+        setPoItems(items);
+      } catch (error) {
+        console.error("Failed to fetch list doc:", error);
+      } finally {
+        setTableLoading(false);
+      }
+    };
+
     fetchStageCount();
+    fetchListDoc();
   }, []);
 
   const pending = stageCount?.PENDING?.[0];

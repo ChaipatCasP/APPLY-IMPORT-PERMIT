@@ -122,7 +122,7 @@ function TableRow({ item, onClick }: TableRowProps) {
 
 export default function POTable() {
   const navigate = useNavigate()
-  const { getFilteredItems } = useAppStore()
+  const { getFilteredItems, tableLoading } = useAppStore()
   const items = getFilteredItems()
 
   const columns = [
@@ -154,7 +154,17 @@ export default function POTable() {
           </tr>
         </thead>
         <tbody>
-          {items.length === 0 ? (
+          {tableLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <tr key={i} className="border-b border-gray-100 animate-pulse">
+                {columns.map((col) => (
+                  <td key={col} className="px-4 py-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : items.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="px-4 py-12 text-center">
                 <div className="flex flex-col items-center gap-2 text-gray-400">

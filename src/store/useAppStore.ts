@@ -7,6 +7,7 @@ interface AppState {
   // Data
   poItems: POItem[]
   stats: DashboardStats
+  tableLoading: boolean
 
   // Filter state
   filter: FilterState
@@ -15,6 +16,8 @@ interface AppState {
   uploadingFiles: Record<string, UploadedFile[]>
 
   // Actions
+  setPoItems: (items: POItem[]) => void
+  setTableLoading: (loading: boolean) => void
   setFilter: (filter: Partial<FilterState>) => void
   setActiveTab: (tab: TabType) => void
   resetFilter: () => void
@@ -36,8 +39,13 @@ const defaultFilter: FilterState = {
 export const useAppStore = create<AppState>((set, get) => ({
   poItems: mockPOItems,
   stats: dashboardStats,
+  tableLoading: false,
   filter: defaultFilter,
   uploadingFiles: {},
+
+  setPoItems: (items) => set({ poItems: items }),
+
+  setTableLoading: (loading) => set({ tableLoading: loading }),
 
   setFilter: (filter) =>
     set((state) => ({ filter: { ...state.filter, ...filter } })),
