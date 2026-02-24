@@ -9,4 +9,14 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  server: {
+    proxy: {
+      // Proxy /Apipj to avoid CORS preflight on JSON+custom-header requests
+      '/Apipj': {
+        target: 'https://api-staging.jagota.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 })

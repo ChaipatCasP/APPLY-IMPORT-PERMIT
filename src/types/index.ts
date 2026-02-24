@@ -165,3 +165,98 @@ export interface CustomerDoc {
   CURRENCY: string;
 }
 
+// ==================== GET_DOC DETAIL ====================
+
+export interface PODetail {
+  PRODUCT_CODE: string;
+  PRODUCT_NAME: string;
+  QTY: string;
+  RATE: string;
+  UNIT: string;
+  TOTAL: string;
+}
+
+export interface POEntry {
+  COMPANY: string;
+  TRANSACTION_TYPE: string;
+  PO_BOOK_NO: string;
+  PO_NO: string;
+  PO_DOC: string;
+  PO_DATE: string;
+  APPROVE_DATE: string;
+  SUP_CODE: string;
+  SUPP_NAME: string;
+  SUPP_ADDRESS: string;
+  CREATION_DATE: string;
+  INCOTERM: string;
+  ETD: string;
+  ETA: string;
+  PORT_OF_ORIGIN: string;
+  TOTAL: string;
+  TAX_TOTAL: string;
+  TAX_P: string;
+  G_TOTAL: string;
+  COUNTRY_ORIGIN: string;
+  PRODUCT_TEMPERATURE: string;
+  SHIPPER_SUP_NAME: string;
+  BUYER: string;
+  TRANSPORT_MODE: string;
+  PORT_OF_LOADING: string;
+  CURRENCY: string;
+  PO_DETAILS: PODetail[];
+}
+
+export interface UploadedFileDoc {
+  RECID: string;
+  DOCUMENT_URL: string;
+  QUE_DATETIME: string;
+  WAITING_MIN: string;
+  FINISH_DATETIME: string;
+  STATUS: string;
+}
+
+export interface POTariff {
+  TARIFF_CODE: string;
+  TARIFF_NAME_EN: string;
+  TARIFF_NAME_TH: string;
+  QTY: string;
+  UNIT: string;
+}
+
+export interface SupSlaughterhouse {
+  SLUG_CODE: string;
+  NAME_E: string;
+  ADDRESS: string;
+  COUNTRY: string;
+  CITY: string;
+  EST: string;
+  PLANT_LICENSED_NO: string;
+}
+
+export interface AIPOTariff {
+  PRODUCT_CODE: string;
+  TARIFF_NAME: string;
+  QTY: string;
+  UNIT: string;
+  MATCHED_STATUS: 'Y' | 'N' | string;
+}
+
+export interface AISupSlaughterhouse {
+  NAME: string;
+  ADDRESS: string;
+  EST_NO: string;
+}
+
+export interface GetDocDetail {
+  STAGE: string;
+  REVISION: string;
+  RECID: string;
+  PREVIEW_ONLY: string;
+  PO: POEntry[];
+  UPLOADED_FILES: UploadedFileDoc[];
+  PO_TARIFF: POTariff[];
+  SUP_SLAUGHTERHOUSE: SupSlaughterhouse[];
+  AI_PO_TARIFF: AIPOTariff[];
+  AI_SUP_SLAUGHTERHOUSE: AISupSlaughterhouse[];
+}
+

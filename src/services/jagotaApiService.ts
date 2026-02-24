@@ -137,6 +137,9 @@ export interface GetDocParams {
     DOC_NO: string | number;
 }
 
+// Re-export shared types from types/index.ts for convenience
+export type { GetDocDetail, POEntry, PODetail, POTariff, SupSlaughterhouse, AIPOTariff, AISupSlaughterhouse, UploadedFileDoc } from '../types';
+
 // API Service Class
 class JagotaApiService {
     private baseUrl: string;
@@ -159,8 +162,9 @@ class JagotaApiService {
     }
 
     private buildJsonUrl(endpoint: string): string {
-        // GET_DOC and similar endpoints use 'Apipj' prefix
-        return `${this.baseUrl}/Apipj/ws_ai_apply_permit/${endpoint}/`;
+        // Use a relative path so Vite's dev-server proxy forwards the request
+        // and avoids CORS preflight on JSON + custom-header requests.
+        return `/Apipj/ws_ai_apply_permit/${endpoint}/`;
     }
 
     private async makeRequest<T>(endpoint: string, params: Record<string, any>): Promise<ApiResponse<T>> {
@@ -277,8 +281,8 @@ class JagotaApiService {
      * POST /Apipj/ws_ai_apply_permit/GET_DOC/
      * Uses JSON body + Username header
      */
-    async getDoc(params: GetDocParams): Promise<ListDocResult> {
-        const response = await this.makeJsonRequest<ListDocResult>('GET_DOC', {
+    async getDoc(params: GetDocParams): Promise<import('../types').GetDocDetail> {
+        const response = await this.makeJsonRequest<import('../types').GetDocDetail>('GET_DOC', {
             COMPANY: params.COMPANY,
             TRANSACTION_TYPE: params.TRANSACTION_TYPE,
             DOC_BOOK: params.DOC_BOOK,
@@ -286,7 +290,11 @@ class JagotaApiService {
         });
 
         if (!response.result || response.result.length === 0) {
-            return { TOTAL_FOUND: '0', TOTAL_PAGE: '0', CUSTOMERS: [] };
+            return {
+                STAGE: '', REVISION: '', RECID: '', PREVIEW_ONLY: 'N',
+                PO: [], UPLOADED_FILES: [], PO_TARIFF: [],
+                SUP_SLAUGHTERHOUSE: [], AI_PO_TARIFF: [], AI_SUP_SLAUGHTERHOUSE: [],
+            };
         }
 
         return response.result[0];
