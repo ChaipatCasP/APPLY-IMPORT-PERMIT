@@ -66,7 +66,6 @@ function TableRow({ item, onClick }: TableRowProps) {
         <div className="font-medium text-gray-700 leading-tight">
           {item.supplier}
         </div>
-        <div className="text-xs text-gray-400">({item.supplierCode})</div>
       </td>
 
       {/* Port */}
@@ -133,6 +132,7 @@ export default function POTable() {
     setPerPage,
   } = useAppStore()
   const items = getFilteredItems()
+  console.log('Filtered items:', items) // Debug log
 
   const columns = [
     'PO NUMBER',

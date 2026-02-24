@@ -127,3 +127,41 @@ export interface FilterState {
   dateRange: { from: string; to: string } | null
   activeTab: TabType
 }
+
+
+export interface ListDocResult {
+  TOTAL_FOUND: string;
+  TOTAL_PAGE: string;
+  CUSTOMERS: CustomerDoc[];
+}
+
+export interface CustomerDoc {
+  COMPANY: string;
+  TRANSACTION_TYPE: string;
+  DOC_BOOK: string;
+  DOC_NO: string;
+  PO_BOOK: string;
+  PO_NO: string;
+  PO_DOC: string;
+  PO_DATE: string;
+  PO_APP_DATE: string;
+  SUPP_CODE: string;
+  SUPP_NAME: string;
+  CREATION_DATE: string;
+  INCOTERM: string;
+  TOTAL: string;
+  ETD: string;
+  ETA: string;
+  PORT_OF_ORIGIN: string;
+  COUNTRY_ORIGIN: string;
+  SHIPPER_SUP_NAME: string;
+  PRODUCT_TEMPERATURE: string;
+  BUYER: string;
+  TRANSPORT_MODE: string;
+  PORT_OF_LOADING: string;
+  STAGE: string;
+  PROCESSING_STATUS: string;
+  CLOSED_STATUS: string;
+  CURRENCY: string;
+}
+

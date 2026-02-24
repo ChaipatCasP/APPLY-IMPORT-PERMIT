@@ -129,6 +129,14 @@ export interface StageCountResult {
     RECEIVED: ReceivedStage[];
 }
 
+// GET_DOC
+export interface GetDocParams {
+    COMPANY: string;
+    TRANSACTION_TYPE: string;
+    DOC_BOOK: string;
+    DOC_NO: string | number;
+}
+
 // API Service Class
 class JagotaApiService {
     private baseUrl: string;
@@ -148,6 +156,11 @@ class JagotaApiService {
 
     private buildUrl(endpoint: string): string {
         return `${this.baseUrl}/${this.packagePath}/${endpoint}/`;
+    }
+
+    private buildJsonUrl(endpoint: string): string {
+        // GET_DOC and similar endpoints use 'Apipj' prefix
+        return `${this.baseUrl}/Apipj/ws_ai_apply_permit/${endpoint}/`;
     }
 
     private async makeRequest<T>(endpoint: string, params: Record<string, any>): Promise<ApiResponse<T>> {
@@ -183,6 +196,40 @@ class JagotaApiService {
             throw error;
         }
     }
+    private async makeJsonRequest<T>(
+        endpoint: string,
+        body: Record<string, any>,
+        username?: string,
+    ): Promise<ApiResponse<T>> {
+        const url = this.buildJsonUrl(endpoint);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Username': username ?? this.staffCode,
+                },
+                body: JSON.stringify(body),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json() as ApiResponse<T>;
+
+            if (data.flag !== 1) {
+                throw new Error(data.message || 'API request failed');
+            }
+
+            return data;
+        } catch (error) {
+            console.error(`API JSON request failed for ${endpoint}:`, error);
+            throw error;
+        }
+    }
+
     /**
      * User Authentication
      * POST /apip/ws_ai_import/USER_AUTHEN/
@@ -216,6 +263,26 @@ class JagotaApiService {
             P_PER_PAGE: params.P_PER_PAGE ?? '',
             P_ORDER_BY: params.P_ORDER_BY ?? '',
             P_ORDER_DIR: params.P_ORDER_DIR ?? '',
+        });
+
+        if (!response.result || response.result.length === 0) {
+            return { TOTAL_FOUND: '0', TOTAL_PAGE: '0', CUSTOMERS: [] };
+        }
+
+        return response.result[0];
+    }
+
+    /**
+     * Get Document Detail
+     * POST /Apipj/ws_ai_apply_permit/GET_DOC/
+     * Uses JSON body + Username header
+     */
+    async getDoc(params: GetDocParams): Promise<ListDocResult> {
+        const response = await this.makeJsonRequest<ListDocResult>('GET_DOC', {
+            COMPANY: params.COMPANY,
+            TRANSACTION_TYPE: params.TRANSACTION_TYPE,
+            DOC_BOOK: params.DOC_BOOK,
+            DOC_NO: params.DOC_NO,
         });
 
         if (!response.result || response.result.length === 0) {

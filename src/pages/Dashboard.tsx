@@ -6,30 +6,39 @@ import TabBar from "../components/dashboard/TabBar";
 import POTable from "../components/dashboard/POTable";
 import { useAppStore } from "../store/useAppStore";
 import { jagotaApi } from "../services/jagotaApiService";
-import type { StageCountResult, CustomerDoc } from "../services/jagotaApiService";
+import type {
+  StageCountResult,
+  CustomerDoc,
+} from "../services/jagotaApiService";
 import type { POItem, POStatus, TempType } from "../types";
 
 function mapStage(stage: string): POStatus {
   switch (stage) {
-    case "Pending Apply": return "Waiting PI";
-    case "Waiting R1/1": return "Waiting R1/1";
-    case "Expiry Alert": return "Expiry Alert";
-    case "Completed": return "Completed";
-    case "Received": return "Received";
-    default: return "Waiting PI";
+    case "Pending Apply":
+      return "Waiting PI";
+    case "Waiting R1/1":
+      return "Waiting R1/1";
+    case "Expiry Alert":
+      return "Expiry Alert";
+    case "Completed":
+      return "Completed";
+    case "Received":
+      return "Received";
+    default:
+      return "Waiting PI";
   }
 }
 
 function mapCustomerDocToPoItem(doc: CustomerDoc): POItem {
   return {
-    id: doc.PO_DOC || `${doc.DOC_BOOK}-${doc.DOC_NO}`,
+    id: `${doc.DOC_BOOK}-${doc.DOC_NO}`,
     poNumber: doc.PO_DOC,
     date: doc.PO_DATE,
     supplier: doc.SUPP_NAME,
     supplierCode: doc.SUPP_CODE,
     port: doc.PORT_OF_ORIGIN,
     portAgent: doc.SHIPPER_SUP_NAME,
-    estNo: "",
+    estNo: "N/A",
     quantity: parseFloat(doc.TOTAL) || 0,
     permitTypes: [],
     countryTemp: doc.COUNTRY_ORIGIN,
@@ -52,7 +61,14 @@ function mapCustomerDocToPoItem(doc: CustomerDoc): POItem {
 }
 
 export default function Dashboard() {
-  const { setActiveTab, setPoItems, setTableLoading, setTotalPages, currentPage, perPage } = useAppStore();
+  const {
+    setActiveTab,
+    setPoItems,
+    setTableLoading,
+    setTotalPages,
+    currentPage,
+    perPage,
+  } = useAppStore();
   const [stageCount, setStageCount] = useState<StageCountResult | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -71,26 +87,30 @@ export default function Dashboard() {
     fetchStageCount();
   }, []);
 
-  const fetchListDoc = useCallback(async (page: number) => {
-    try {
-      setTableLoading(true);
-      const data = await jagotaApi.listDoc({
-        P_STAFF_CODE: jagotaApi.getStaffCode(),
-        P_PAGE: page,
-        P_PER_PAGE: perPage,
-      });
-      const items = (data.CUSTOMERS ?? []).map(mapCustomerDocToPoItem);
-      setPoItems(items);
-      setTotalPages(
-        parseInt(data.TOTAL_PAGE ?? "1", 10),
-        parseInt(data.TOTAL_FOUND ?? "0", 10)
-      );
-    } catch (error) {
-      console.error("Failed to fetch list doc:", error);
-    } finally {
-      setTableLoading(false);
-    }
-  }, [perPage, setTableLoading, setPoItems, setTotalPages]);
+  const fetchListDoc = useCallback(
+    async (page: number) => {
+      try {
+        setTableLoading(true);
+        const data = await jagotaApi.listDoc({
+          P_STAFF_CODE: jagotaApi.getStaffCode(),
+          P_PAGE: page,
+          P_PER_PAGE: perPage,
+        });
+
+        const items = (data.CUSTOMERS ?? []).map(mapCustomerDocToPoItem);
+        setPoItems(items);
+        setTotalPages(
+          parseInt(data.TOTAL_PAGE ?? "1", 10),
+          parseInt(data.TOTAL_FOUND ?? "0", 10),
+        );
+      } catch (error) {
+        console.error("Failed to fetch list doc:", error);
+      } finally {
+        setTableLoading(false);
+      }
+    },
+    [perPage, setTableLoading, setPoItems, setTotalPages],
+  );
 
   useEffect(() => {
     fetchListDoc(currentPage);
@@ -250,10 +270,8 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
         {/* Filter Bar */}
         <FilterBar />
-
         {/* Table Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <TabBar />
