@@ -23,6 +23,112 @@ export interface AuthenResult {
     STAFF_NAME: string;
 }
 
+// list_doc
+export interface ListDocParams {
+    P_STAFF_CODE: string;
+    P_SUPP_CODE?: string;
+    P_BUYER_CODE?: string;
+    P_PROCESSING_STATUS?: string;
+    P_STAGE?: string;
+    P_STAGE_OPTION?: string;
+    P_DATE_FROM?: string;
+    P_DATE_TO?: string;
+    P_SEARCH?: string;
+    P_PAGE?: string | number;
+    P_PER_PAGE?: string | number;
+    P_ORDER_BY?: string;
+    P_ORDER_DIR?: string;
+}
+
+export interface CustomerDoc {
+    COMPANY: string;
+    TRANSACTION_TYPE: string;
+    DOC_BOOK: string;
+    DOC_NO: string;
+    PO_BOOK: string;
+    PO_NO: string;
+    PO_DOC: string;
+    PO_DATE: string;
+    PO_APP_DATE: string;
+    SUPP_CODE: string;
+    SUPP_NAME: string;
+    CREATION_DATE: string;
+    INCOTERM: string;
+    TOTAL: string;
+    ETD: string;
+    ETA: string;
+    PORT_OF_ORIGIN: string;
+    COUNTRY_ORIGIN: string;
+    SHIPPER_SUP_NAME: string;
+    PRODUCT_TEMPERATURE: string;
+    BUYER: string;
+    TRANSPORT_MODE: string;
+    PORT_OF_LOADING: string;
+    STAGE: string;
+    PROCESSING_STATUS: string;
+    CLOSED_STATUS: string;
+    CURRENCY: string;
+}
+
+export interface ListDocResult {
+    TOTAL_FOUND: string;
+    TOTAL_PAGE: string;
+    CUSTOMERS: CustomerDoc[];
+}
+
+// STAGE_COUNT
+export interface StageCountParams {
+    P_STAFF_CODE: string;
+}
+
+export interface PendingStage {
+    SEQ: string;
+    STAGE: string;
+    STAGE_NAME: string;
+    TOTAL: string;
+}
+
+export interface RequestStage {
+    SEQ: string;
+    STAGE: string;
+    STAGE_NAME: string;
+    TOTAL: string;
+    PROCESSING: string;
+    READY: string;
+    FAIL: string;
+}
+
+export interface ExpiryStage {
+    SEQ: string;
+    STAGE: string;
+    STAGE_NAME: string;
+    TOTAL: string;
+    EXPIRE_IN_5_DAYS: string;
+    EXPIRED: string;
+}
+
+export interface CompletedStage {
+    SEQ: string;
+    STAGE: string;
+    STAGE_NAME: string;
+    TOTAL: string;
+}
+
+export interface ReceivedStage {
+    SEQ: string;
+    STAGE: string;
+    STAGE_NAME: string;
+    TOTAL: string;
+}
+
+export interface StageCountResult {
+    PENDING: PendingStage[];
+    REQUEST: RequestStage[];
+    EXPIRY: ExpiryStage[];
+    COMPLETED: CompletedStage[];
+    RECEIVED: ReceivedStage[];
+}
+
 // API Service Class
 class JagotaApiService {
     private baseUrl: string;
@@ -31,7 +137,7 @@ class JagotaApiService {
 
     constructor() {
         this.baseUrl = (import.meta as any).env.VITE_API_URL;
-        this.packagePath = 'apip/ws_ai_import';
+        this.packagePath = 'apip/ws_ai_apply_permit';
         this.staffCode = ''; // Will be set after successful authentication
 
         if (!this.baseUrl) {
@@ -86,6 +192,50 @@ class JagotaApiService {
 
         if (!response.result || response.result.length === 0) {
             throw new Error('Authentication failed: No result returned');
+        }
+
+        return response.result[0];
+    }
+
+    /**
+     * List Documents
+     * POST /apip/ws_ai_apply_permit/list_doc/
+     */
+    async listDoc(params: ListDocParams): Promise<ListDocResult> {
+        const response = await this.makeRequest<ListDocResult>('list_doc', {
+            P_STAFF_CODE: params.P_STAFF_CODE ?? this.staffCode,
+            P_SUPP_CODE: params.P_SUPP_CODE ?? '',
+            P_BUYER_CODE: params.P_BUYER_CODE ?? '',
+            P_PROCESSING_STATUS: params.P_PROCESSING_STATUS ?? '',
+            P_STAGE: params.P_STAGE ?? '',
+            P_STAGE_OPTION: params.P_STAGE_OPTION ?? '',
+            P_DATE_FROM: params.P_DATE_FROM ?? '',
+            P_DATE_TO: params.P_DATE_TO ?? '',
+            P_SEARCH: params.P_SEARCH ?? '',
+            P_PAGE: params.P_PAGE ?? '',
+            P_PER_PAGE: params.P_PER_PAGE ?? '',
+            P_ORDER_BY: params.P_ORDER_BY ?? '',
+            P_ORDER_DIR: params.P_ORDER_DIR ?? '',
+        });
+
+        if (!response.result || response.result.length === 0) {
+            return { TOTAL_FOUND: '0', TOTAL_PAGE: '0', CUSTOMERS: [] };
+        }
+
+        return response.result[0];
+    }
+
+    /**
+     * Get Stage Count
+     * POST /apip/ws_ai_apply_permit/STAGE_COUNT/
+     */
+    async getStageCount(params?: StageCountParams): Promise<StageCountResult> {
+        const response = await this.makeRequest<StageCountResult>('STAGE_COUNT', {
+            P_STAFF_CODE: params?.P_STAFF_CODE ?? this.staffCode,
+        });
+
+        if (!response.result || response.result.length === 0) {
+            throw new Error('getStageCount: No result returned');
         }
 
         return response.result[0];

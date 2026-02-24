@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 interface StatCardProps {
   label: string
-  value: number
+  value: string | number
   valueColor?: string
   bgColor?: string
   borderColor?: string
