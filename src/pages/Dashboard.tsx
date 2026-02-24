@@ -168,15 +168,15 @@ export default function Dashboard() {
             className="bg-white rounded-xl shadow-sm border border-white p-2 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => setActiveTab("Permit Received")}
           >
-            <div className="bg-red-100 rounded-xl border border-red-100 flex flex-col h-full">
+            <div className="bg-[#feeadf] rounded-xl border border-red-100 flex flex-col h-full">
               <div className="flex items-center justify-center px-1">
-                <span className="text-[24px] font-bold text-red-700 tracking-wide pt-3">
+                <span className="text-[24px] font-bold text-[#973513] tracking-wide pt-3">
                   Received
                 </span>
               </div>
 
               <div className="flex items-center justify-center px-1">
-                <span className="text-[50px] font-black text-red-700">
+                <span className="text-[50px] font-black text-[#973513]">
                   {statsLoading ? "..." : (received?.TOTAL ?? "0")}
                 </span>
               </div>
