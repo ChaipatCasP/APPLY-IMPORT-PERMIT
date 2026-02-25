@@ -137,6 +137,30 @@ export interface GetDocParams {
     DOC_NO: string | number;
 }
 
+// APPLY_PERMIT_AI (n8n)
+export interface ApplyPermitAIParams {
+    file: File;
+    staff_code: string;
+    company: string;
+    transaction_type: string;
+    doc_book: string;
+    doc_no: string;
+    stage: string;
+}
+
+// REVISE_JOB / REVISE_LIST / REVISE_CANCEL
+export interface ReviseParams {
+    P_STAFF_CODE: string;
+    P_COMPANY: string;
+    P_TRANSACTION_TYPE: string;
+    P_DOC_BOOK: string;
+    P_DOC_NO: string;
+    P_STAGE: string;
+}
+
+export type ReviseListParams = ReviseParams;
+export type ReviseCancelParams = ReviseParams;
+
 // Re-export shared types from types/index.ts for convenience
 export type { GetDocDetail, POEntry, PODetail, POTariff, SupSlaughterhouse, AIPOTariff, AISupSlaughterhouse, UploadedFileDoc } from '../types';
 
@@ -145,11 +169,15 @@ class JagotaApiService {
     private baseUrl: string;
     private packagePath: string;
     private staffCode: string;
+    private n8nUrl: string;
+    private n8nBearerToken: string;
 
     constructor() {
         this.baseUrl = (import.meta as any).env.VITE_API_URL;
         this.packagePath = 'apip/ws_ai_apply_permit';
         this.staffCode = ''; // Will be set after successful authentication
+        this.n8nUrl = (import.meta as any).env.VITE_N8N_URL ?? '';
+        this.n8nBearerToken = (import.meta as any).env.VITE_N8N_BEARER_TOKEN ?? '';
 
         if (!this.baseUrl) {
             throw new Error('Missing required environment variable: VITE_API_URL');
@@ -200,6 +228,36 @@ class JagotaApiService {
             throw error;
         }
     }
+
+    private async makeFormRequestWithHeaders<T>(
+        url: string,
+        formData: FormData,
+        headers: Record<string, string> = {},
+    ): Promise<ApiResponse<T>> {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json() as ApiResponse<T>;
+
+            if (data.flag !== 1) {
+                throw new Error(data.message || 'API request failed');
+            }
+
+            return data;
+        } catch (error) {
+            console.error(`API form request failed for ${url}:`, error);
+            throw error;
+        }
+    }
+
     private async makeJsonRequest<T>(
         endpoint: string,
         body: Record<string, any>,
@@ -328,6 +386,85 @@ class JagotaApiService {
      */
     getStaffCode(): string {
         return this.staffCode;
+    }
+
+    /**
+     * Apply Permit AI (n8n webhook)
+     * POST https://n8n-staging.jagota.com/webhook-test/ApplyPermitAI-toque
+     * Sends a PDF file + form fields with Bearer auth
+     */
+    async applyPermitAI(params: ApplyPermitAIParams, username?: string): Promise<ApiResponse<any>> {
+        const url = `${this.n8nUrl}/ApplyPermitAI-toque`;
+        const formData = new FormData();
+        formData.append('file_upload', params.file);
+        formData.append('staff_code', params.staff_code);
+        formData.append('company', params.company);
+        formData.append('transaction_type', params.transaction_type);
+        formData.append('doc_book', params.doc_book);
+        formData.append('doc_no', params.doc_no);
+        formData.append('stage', params.stage);
+
+        return this.makeFormRequestWithHeaders<any>(url, formData, {
+            Authorization: `Bearer ${this.n8nBearerToken}`,
+            Username: username ?? this.staffCode,
+        });
+    }
+
+    /**
+     * Revise Job
+     * POST /Apip/ws_ai_apply_permit/REVISE_JOB/
+     */
+    async reviseJob(params: ReviseParams, username?: string): Promise<ApiResponse<any>> {
+        const url = `${this.baseUrl}/Apip/ws_ai_apply_permit/REVISE_JOB/`;
+        const formData = new FormData();
+        formData.append('P_STAFF_CODE', params.P_STAFF_CODE);
+        formData.append('P_COMPANY', params.P_COMPANY);
+        formData.append('P_TRANSACTION_TYPE', params.P_TRANSACTION_TYPE);
+        formData.append('P_DOC_BOOK', params.P_DOC_BOOK);
+        formData.append('P_DOC_NO', params.P_DOC_NO);
+        formData.append('P_STAGE', params.P_STAGE);
+
+        return this.makeFormRequestWithHeaders<any>(url, formData, {
+            Username: username ?? this.staffCode,
+        });
+    }
+
+    /**
+     * Revise List
+     * POST /Apip/ws_ai_apply_permit/REVISE_LIST/
+     */
+    async reviseList(params: ReviseListParams, username?: string): Promise<ApiResponse<any>> {
+        const url = `${this.baseUrl}/Apip/ws_ai_apply_permit/REVISE_LIST/`;
+        const formData = new FormData();
+        formData.append('P_STAFF_CODE', params.P_STAFF_CODE);
+        formData.append('P_COMPANY', params.P_COMPANY);
+        formData.append('P_TRANSACTION_TYPE', params.P_TRANSACTION_TYPE);
+        formData.append('P_DOC_BOOK', params.P_DOC_BOOK);
+        formData.append('P_DOC_NO', params.P_DOC_NO);
+        formData.append('P_STAGE', params.P_STAGE);
+
+        return this.makeFormRequestWithHeaders<any>(url, formData, {
+            Username: username ?? this.staffCode,
+        });
+    }
+
+    /**
+     * Revise Cancel
+     * POST /Apip/ws_ai_apply_permit/REVISE_CANCEL/
+     */
+    async reviseCancel(params: ReviseCancelParams, username?: string): Promise<ApiResponse<any>> {
+        const url = `${this.baseUrl}/Apip/ws_ai_apply_permit/REVISE_CANCEL/`;
+        const formData = new FormData();
+        formData.append('P_STAFF_CODE', params.P_STAFF_CODE);
+        formData.append('P_COMPANY', params.P_COMPANY);
+        formData.append('P_TRANSACTION_TYPE', params.P_TRANSACTION_TYPE);
+        formData.append('P_DOC_BOOK', params.P_DOC_BOOK);
+        formData.append('P_DOC_NO', params.P_DOC_NO);
+        formData.append('P_STAGE', params.P_STAGE);
+
+        return this.makeFormRequestWithHeaders<any>(url, formData, {
+            Username: username ?? this.staffCode,
+        });
     }
 
 }
