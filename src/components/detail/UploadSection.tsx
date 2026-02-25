@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Upload, File, Eye, Loader2 } from "lucide-react";
+import { Upload, File, Eye, Loader2, X } from "lucide-react";
 import type { UploadedFileDoc } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 
@@ -31,6 +31,7 @@ export default function UploadSection({
 }: UploadSectionProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { addUploadedFile } = useAppStore();
 
   const handleFiles = (files: FileList | null) => {
@@ -130,7 +131,7 @@ export default function UploadSection({
                         className={`font-semibold ${
                           f.STATUS === "Processing"
                             ? "text-yellow-600"
-                            : f.STATUS === "Completed"
+                            : f.STATUS === "Done"
                               ? "text-green-600"
                               : "text-red-600"
                         }`}
@@ -138,24 +139,15 @@ export default function UploadSection({
                         {f.STATUS}
                       </span>
                     </p>
-                    {/* <p className="text-gray-500">
-                      Record:{" "}
-                      <span className="font-semibold text-gray-700">
-                        {f.recordStatus}
-                      </span>
-                    </p> */}
-                    {/* <p className="text-gray-500">
-                      File Name:{" "}
-                      <span className="font-semibold text-gray-700">
-                        {f.fileName}
-                      </span>
-                    </p> */}
                   </div>
                 </div>
                 <div className="text-right text-xs text-gray-400 flex-shrink-0">
                   <p>Queued: {f.QUE_DATETIME}</p>
                   <p>Finished: {f.FINISH_DATETIME ?? "-"}</p>
-                  <button className="mt-1.5 text-blue-500 hover:text-blue-700 font-semibold flex items-center gap-1 ml-auto transition-colors">
+                  <button
+                    className="mt-1.5 text-blue-500 hover:text-blue-700 font-semibold flex items-center gap-1 ml-auto transition-colors"
+                    onClick={() => setPreviewUrl(f.DOCUMENT_URL)}
+                  >
                     <Eye size={12} /> View
                   </button>
                 </div>
@@ -170,6 +162,38 @@ export default function UploadSection({
         <p className="text-sm text-gray-400 text-center py-4">
           No files uploaded
         </p>
+      )}
+
+      {/* File Preview Modal */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <div
+            className="relative bg-white rounded-xl shadow-2xl w-[90vw] h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <span className="text-sm font-semibold text-gray-700 truncate max-w-[80%]">
+                {previewUrl}
+              </span>
+              <button
+                onClick={() => setPreviewUrl(null)}
+                className="text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {/* PDF Viewer */}
+            <iframe
+              src={previewUrl}
+              className="flex-1 w-full"
+              title="File Preview"
+            />
+          </div>
+        </div>
       )}
     </div>
   );
