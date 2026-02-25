@@ -318,6 +318,7 @@ export default function Detail() {
                   docNo={docNo ?? ""}
                   stage="REQUEST"
                   onRefresh={fetchDoc}
+                  docDetail={docDetail}
                 />
               )}
 
@@ -333,6 +334,7 @@ export default function Detail() {
                   docNo={docNo ?? ""}
                   stage="REQUEST"
                   onRefresh={fetchDoc}
+                  docDetail={docDetail}
                 />
               )}
 

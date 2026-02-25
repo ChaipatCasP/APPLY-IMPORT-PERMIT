@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Upload, File, Eye, Loader2, X, CheckCircle, AlertCircle } from "lucide-react";
-import type { UploadedFileDoc } from "../../types";
+import {
+  Upload,
+  File,
+  Eye,
+  Loader2,
+  X,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import type { UploadedFileDoc, GetDocDetail } from "../../types";
 import { jagotaApi } from "../../services/jagotaApiService";
 
 interface UploadSectionProps {
@@ -14,6 +22,7 @@ interface UploadSectionProps {
   docNo?: string;
   stage?: string;
   onRefresh?: () => void;
+  docDetail?: GetDocDetail;
 }
 
 function FileStatusIcon({ status }: { status: UploadedFileDoc["STATUS"] }) {
@@ -42,6 +51,7 @@ export default function UploadSection({
   docNo = "",
   stage = "REQUEST",
   onRefresh,
+  docDetail,
 }: UploadSectionProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -50,21 +60,64 @@ export default function UploadSection({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
 
-  // Countdown timer after successful upload
+  // Countdown timer — on reaching 0, call getDoc and compare UPLOADED_FILES
   useEffect(() => {
     if (countdown === null) return;
     if (countdown === 0) {
-      onRefresh?.();
       setCountdown(null);
+      // Only poll when there is a Processing file
+      const currentStatus = docDetail?.UPLOADED_FILES[0]?.STATUS;
+      if (currentStatus !== "Processing") return;
+
+      (async () => {
+        try {
+          const fresh = await jagotaApi.getDoc({
+            COMPANY: company,
+            TRANSACTION_TYPE: transactionType,
+            DOC_BOOK: docBook,
+            DOC_NO: docNo,
+          });
+          const freshStatus = fresh.UPLOADED_FILES[0]?.STATUS;
+          if (freshStatus !== currentStatus) {
+            onRefresh?.();
+          } else {
+            // Still Processing — restart countdown
+            setCountdown(10);
+          }
+        } catch {
+          onRefresh?.();
+        }
+      })();
       return;
     }
-    const t = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    const t = setTimeout(
+      () => setCountdown((c) => (c !== null ? c - 1 : null)),
+      1000,
+    );
     return () => clearTimeout(t);
-  }, [countdown, onRefresh]);
+  }, [
+    countdown,
+    onRefresh,
+    company,
+    transactionType,
+    docBook,
+    docNo,
+    docDetail,
+  ]);
+
+  // Auto-start countdown when any uploaded file is still Processing
+  useEffect(() => {
+    const hasProcessing = uploadedFiles.some((f) => f.STATUS === "Processing");
+    if (hasProcessing && countdown === null && !uploading) {
+      setCountdown(10);
+    }
+  }, [uploadedFiles]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const pdfs = Array.from(files).filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    const pdfs = Array.from(files).filter((f) =>
+      f.name.toLowerCase().endsWith(".pdf"),
+    );
     if (pdfs.length === 0) return;
 
     setUploading(true);
@@ -83,7 +136,8 @@ export default function UploadSection({
         });
       }
       // Start 10-second countdown then refresh
-      setCountdown(10);
+      // setCountdown(10);
+      setTimeout(() => onRefresh?.(), 500);
     } catch (err: any) {
       setUploadError(err.message ?? "Upload failed");
     } finally {
@@ -105,17 +159,25 @@ export default function UploadSection({
       {uploading && (
         <div className="flex flex-col items-center justify-center gap-3 py-6">
           <Loader2 size={32} className="text-blue-500 animate-spin" />
-          <p className="text-sm font-semibold text-gray-600">Uploading file...</p>
+          <p className="text-sm font-semibold text-gray-600">
+            Uploading file...
+          </p>
         </div>
       )}
 
-      {/* Upload success countdown */}
+      {/* Upload success / processing countdown */}
       {countdown !== null && (
-        <div className="flex flex-col items-center justify-center gap-2 py-4 bg-green-50 rounded-xl border border-green-200">
+        <div
+          style={{ display: "none" }}
+          className="flex flex-col items-center justify-center gap-2 py-4 bg-green-50 rounded-xl border border-green-200"
+        >
           <CheckCircle size={28} className="text-green-500" />
-          <p className="text-sm font-semibold text-green-700">Upload successful!</p>
+          <p className="text-sm font-semibold text-green-700">
+            {uploading ? "Processing..." : "File is being processed"}
+          </p>
           <p className="text-xs text-gray-500">
-            Refreshing data in <span className="font-bold text-green-700">{countdown}s</span>...
+            Refreshing data in{" "}
+            <span className="font-bold text-green-700">{countdown}s</span>...
           </p>
         </div>
       )}
