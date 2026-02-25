@@ -1,14 +1,17 @@
 import { CheckCircle, XCircle } from 'lucide-react'
-import type { AIMatchingResult } from '../../types'
+import type { POItem } from '../../types'
 
 interface AIMatchingResultPanelProps {
-  result: AIMatchingResult
+  result: POItem
 }
 
 export default function AIMatchingResultPanel({
   result,
 }: AIMatchingResultPanelProps) {
-  const permitCount = result.permitTypes.length
+
+console.log('AIMatchingResultPanel render with result:', result)
+
+  const permitCount = result.permitTypesDetail.length
   const estCount = result.estDetails.length
 
   return (
@@ -24,7 +27,7 @@ export default function AIMatchingResultPanel({
           </p>
         </div>
         <div className="divide-y divide-gray-100">
-          {result.permitTypes.map((pt) => (
+          {result.permitTypesDetail.map((pt) => (
             <div
               key={pt.id}
               className="flex items-center justify-between px-4 py-2.5"

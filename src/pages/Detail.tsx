@@ -1,25 +1,45 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import Layout from '../components/layout/Layout'
-import POHeader from '../components/detail/POHeader'
-import ProductsList from '../components/detail/ProductsList'
-import PermitTypePanel from '../components/detail/PermitTypePanel'
-import UploadSection from '../components/detail/UploadSection'
-import UploadedFilesView from '../components/detail/UploadedFilesView'
-import AIMatchingResultPanel from '../components/detail/AIMatchingResultPanel'
-import ESTDetailsTable from '../components/detail/ESTDetailsTable'
-import { jagotaApi } from '../services/jagotaApiService'
-import type { GetDocDetail, POEntry, POTariff, SupSlaughterhouse, AIPOTariff, AISupSlaughterhouse } from '../types'
-import type { POItem, POStatus, TempType, Product, PermitType, ESTDetail } from '../types'
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import Layout from "../components/layout/Layout";
+import POHeader from "../components/detail/POHeader";
+import ProductsList from "../components/detail/ProductsList";
+import PermitTypePanel from "../components/detail/PermitTypePanel";
+import UploadSection from "../components/detail/UploadSection";
+import UploadedFilesView from "../components/detail/UploadedFilesView";
+import AIMatchingResultPanel from "../components/detail/AIMatchingResultPanel";
+import ESTDetailsTable from "../components/detail/ESTDetailsTable";
+import { jagotaApi } from "../services/jagotaApiService";
+import type {
+  GetDocDetail,
+  POEntry,
+  POTariff,
+  SupSlaughterhouse,
+  AIPOTariff,
+  AISupSlaughterhouse,
+} from "../types";
+import type {
+  POItem,
+  POStatus,
+  TempType,
+  Product,
+  PermitType,
+  ESTDetail,
+} from "../types";
+import ESTDetailsTableAI from "@/components/detail/ESTDetailsTableAI";
 
 function mapStage(stage: string): POStatus {
   switch (stage) {
-    case 'Waiting R1/1': return 'Waiting R1/1'
-    case 'Expiry Alert': return 'Expiry Alert'
-    case 'Completed': return 'Completed'
-    case 'Received': return 'Received'
-    default: return 'Waiting PI'
+    case "Waiting R1/1":
+      return "Waiting R1/1";
+    case "Expiry Alert":
+      return "Expiry Alert";
+    case "Completed":
+      return "Completed";
+    case "Received":
+      return "Received";
+    default:
+      return "Waiting PI";
   }
 }
 
@@ -30,9 +50,9 @@ function mapProducts(po: POEntry): Product[] {
     name: d.PRODUCT_NAME,
     quantity: parseFloat(d.QTY) || 0,
     unit: d.UNIT,
-    tariffCode: '',
+    tariffCode: "",
     description: d.PRODUCT_NAME,
-  }))
+  }));
 }
 
 function mapPermitTypes(tariffs: POTariff[]): PermitType[] {
@@ -43,7 +63,7 @@ function mapPermitTypes(tariffs: POTariff[]): PermitType[] {
     unit: t.UNIT,
     quantity: parseFloat(t.QTY) || 0,
     matched: false,
-  }))
+  }));
 }
 
 function mapPermitTypesFromAI(tariffs: AIPOTariff[]): PermitType[] {
@@ -53,8 +73,8 @@ function mapPermitTypesFromAI(tariffs: AIPOTariff[]): PermitType[] {
     tariffCode: t.PRODUCT_CODE,
     unit: t.UNIT,
     quantity: parseFloat(t.QTY) || 0,
-    matched: t.MATCHED_STATUS === 'Y',
-  }))
+    matched: t.MATCHED_STATUS === "Y",
+  }));
 }
 
 function mapEstDetails(slaughterhouses: SupSlaughterhouse[]): ESTDetail[] {
@@ -67,121 +87,127 @@ function mapEstDetails(slaughterhouses: SupSlaughterhouse[]): ESTDetail[] {
     country: s.COUNTRY,
     plantLicenseNo: s.PLANT_LICENSED_NO,
     verified: false,
-  }))
+  }));
 }
 
-function mapEstDetailsFromAI(slaughterhouses: AISupSlaughterhouse[]): ESTDetail[] {
+function mapEstDetailsFromAI(
+  slaughterhouses: AISupSlaughterhouse[],
+): ESTDetail[] {
   return slaughterhouses.map((s, i) => ({
     id: `ai-est-${i}`,
     plantName: s.NAME,
     estNo: s.EST_NO,
     address: s.ADDRESS,
-    city: '',
-    country: '',
-    plantLicenseNo: '',
+    city: "",
+    country: "",
+    plantLicenseNo: "",
     verified: false,
-  }))
+  }));
 }
 
-function mapGetDocDetailToPoItem(detail: GetDocDetail, docBook: string, docNo: string): POItem {
-  const po = detail.PO?.[0]
-  const hasAITariffs = (detail.AI_PO_TARIFF?.length ?? 0) > 0
-  const hasAISlaughter = (detail.AI_SUP_SLAUGHTERHOUSE?.length ?? 0) > 0
+function mapGetDocDetailToPoItem(
+  detail: GetDocDetail,
+  docBook: string,
+  docNo: string,
+): POItem {
+  const po = detail.PO?.[0];
+  const hasAITariffs = (detail.AI_PO_TARIFF?.length ?? 0) > 0;
+  const hasAISlaughter = (detail.AI_SUP_SLAUGHTERHOUSE?.length ?? 0) > 0;
 
   const permitTypesDetail = hasAITariffs
     ? mapPermitTypesFromAI(detail.AI_PO_TARIFF)
-    : mapPermitTypes(detail.PO_TARIFF ?? [])
+    : mapPermitTypes(detail.PO_TARIFF ?? []);
 
   const estDetails = hasAISlaughter
     ? mapEstDetailsFromAI(detail.AI_SUP_SLAUGHTERHOUSE)
-    : mapEstDetails(detail.SUP_SLAUGHTERHOUSE ?? [])
+    : mapEstDetails(detail.SUP_SLAUGHTERHOUSE ?? []);
 
   const firstEst = hasAISlaughter
-    ? (detail.AI_SUP_SLAUGHTERHOUSE[0]?.EST_NO ?? '')
-    : (detail.SUP_SLAUGHTERHOUSE?.[0]?.EST ?? '')
+    ? (detail.AI_SUP_SLAUGHTERHOUSE[0]?.EST_NO ?? "")
+    : (detail.SUP_SLAUGHTERHOUSE?.[0]?.EST ?? "");
 
   return {
     id: `${docBook}-${docNo}`,
-    poNumber: po?.PO_DOC ?? '',
-    date: po?.PO_DATE ?? '',
-    supplier: po?.SUPP_NAME ?? '',
-    supplierCode: po?.SUP_CODE ?? '',
-    port: po?.PORT_OF_ORIGIN ?? '',
-    portAgent: po?.SHIPPER_SUP_NAME ?? '',
+    poNumber: po?.PO_DOC ?? "",
+    date: po?.PO_DATE ?? "",
+    supplier: po?.SUPP_NAME ?? "",
+    supplierCode: po?.SUP_CODE ?? "",
+    port: po?.PORT_OF_ORIGIN ?? "",
+    portAgent: po?.SHIPPER_SUP_NAME ?? "",
     estNo: firstEst,
-    quantity: parseFloat(po?.TOTAL ?? '0') || 0,
+    quantity: parseFloat(po?.TOTAL ?? "0") || 0,
     permitTypes: detail.PO_TARIFF?.map((t) => t.TARIFF_CODE) ?? [],
-    countryTemp: po?.COUNTRY_ORIGIN ?? '',
-    freight: po?.TRANSPORT_MODE === 'Sea' ? 'Sea Freight' : 'Air Freight',
-    etd: po?.ETD ?? '',
-    eta: po?.ETA ?? '',
-    createDate: po?.CREATION_DATE ?? '',
+    countryTemp: po?.COUNTRY_ORIGIN ?? "",
+    freight: po?.TRANSPORT_MODE === "Sea" ? "Sea Freight" : "Air Freight",
+    etd: po?.ETD ?? "",
+    eta: po?.ETA ?? "",
+    createDate: po?.CREATION_DATE ?? "",
     requestDocNoDate: undefined,
     status: mapStage(detail.STAGE),
-    origin: po?.COUNTRY_ORIGIN ?? '',
-    temp: (po?.PRODUCT_TEMPERATURE ?? '') as TempType,
-    buyer: po?.BUYER ?? '',
-    buyerCode: '',
-    poApprovalDate: po?.APPROVE_DATE ?? '',
+    origin: po?.COUNTRY_ORIGIN ?? "",
+    temp: (po?.PRODUCT_TEMPERATURE ?? "") as TempType,
+    buyer: po?.BUYER ?? "",
+    buyerCode: "",
+    poApprovalDate: po?.APPROVE_DATE ?? "",
     products: po ? mapProducts(po) : [],
     permitTypesDetail,
     estDetails,
     uploadedFiles: [],
-  }
+  };
 }
 
 export default function Detail() {
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
-  const [po, setPo] = useState<POItem | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [po, setPo] = useState<POItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) {
-      setError('Invalid document ID')
-      setLoading(false)
-      return
+      setError("Invalid document ID");
+      setLoading(false);
+      return;
     }
 
     // id format: DOC_BOOK-DOC_NO  e.g. "91-6785"
-    const dashIdx = id.indexOf('-')
+    const dashIdx = id.indexOf("-");
     if (dashIdx === -1) {
-      setError('Invalid document ID format')
-      setLoading(false)
-      return
+      setError("Invalid document ID format");
+      setLoading(false);
+      return;
     }
 
-    const docBook = id.substring(0, dashIdx)
-    const docNo = id.substring(dashIdx + 1)
+    const docBook = id.substring(0, dashIdx);
+    const docNo = id.substring(dashIdx + 1);
 
     const fetchDoc = async () => {
       try {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
+        setError(null);
         const result = await jagotaApi.getDoc({
-          COMPANY: 'JB',
+          COMPANY: "JB",
           TRANSACTION_TYPE: docBook,
           DOC_BOOK: docBook,
           DOC_NO: docNo,
-        })
+        });
 
         if (!result || !result.PO?.length) {
-          setError('Document not found')
-          return
+          setError("Document not found");
+          return;
         }
 
-        setPo(mapGetDocDetailToPoItem(result, docBook, docNo))
+        setPo(mapGetDocDetailToPoItem(result, docBook, docNo));
       } catch (err: any) {
-        setError(err.message ?? 'Failed to load document')
+        setError(err.message ?? "Failed to load document");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchDoc()
-  }, [id])
+    fetchDoc();
+  }, [id]);
 
   if (loading) {
     return (
@@ -196,7 +222,7 @@ export default function Detail() {
           </div>
         </div>
       </Layout>
-    )
+    );
   }
 
   if (error || !po) {
@@ -206,33 +232,30 @@ export default function Detail() {
           <span className="material-symbols-outlined text-6xl text-gray-300">
             search_off
           </span>
-          <p className="text-gray-500 text-lg">{error ?? 'PO not found'}</p>
-          <button
-            className="btn-secondary"
-            onClick={() => navigate('/')}
-          >
+          <p className="text-gray-500 text-lg">{error ?? "PO not found"}</p>
+          <button className="btn-secondary" onClick={() => navigate("/")}>
             Back to Dashboard
           </button>
         </div>
       </Layout>
-    )
+    );
   }
 
-  const isCompleted = po.status === 'Completed'
-  const hasFiles = po.uploadedFiles.length > 0
+  const isCompleted = po.status === "Completed";
+  const hasFiles = po.uploadedFiles.length > 0;
 
-  const rightPanelMode: 'view-only' | 'processing' | 'upload' = isCompleted
-    ? 'view-only'
+  const rightPanelMode: "view-only" | "processing" | "upload" = isCompleted
+    ? "view-only"
     : hasFiles
-    ? 'processing'
-    : 'upload'
+      ? "processing"
+      : "upload";
 
   return (
     <Layout>
       <div className="max-w-[1600px] mx-auto flex flex-col gap-5">
         {/* Back button */}
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors w-fit"
         >
           <ArrowLeft size={16} />
@@ -242,39 +265,66 @@ export default function Detail() {
         {/* PO Info Header */}
         <POHeader po={po} />
 
-        {/* Main 3-column content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Col 1: Products */}
-          <ProductsList products={po.products} />
+        {/* Main 2-column content */}
 
-          {/* Col 2: Permit Type */}
-          <PermitTypePanel permitTypes={po.permitTypesDetail} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="flex flex-col">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Col 1: Products */}
+              <ProductsList products={po.products} />
 
-          {/* Col 3: Upload / Files */}
-          <div className="flex flex-col gap-4">
-            {rightPanelMode === 'view-only' && (
-              <UploadedFilesView files={po.uploadedFiles} />
-            )}
+              {/* Col 2: Permit Type */}
+              <PermitTypePanel permitTypes={po.permitTypesDetail} />
+            </div>
 
-            {rightPanelMode === 'processing' && (
-              <UploadSection
-                poId={po.id}
-                uploadedFiles={po.uploadedFiles}
-                showUploadArea={false}
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-5 mt-5">
+              <ESTDetailsTable
+                estDetails={po.estDetails}
+                showVerification={false}
+                darkHeader={true}
               />
-            )}
+            </div>
+          </div>
 
-            {rightPanelMode === 'upload' && (
-              <UploadSection
-                poId={po.id}
-                uploadedFiles={po.uploadedFiles}
-                showUploadArea={true}
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-5">
+            {/* Col 3: Upload / Files */}
+            <div className="flex flex-col gap-4">
+              {rightPanelMode === "view-only" && (
+                <UploadedFilesView files={po.uploadedFiles} />
+              )}
+
+              {rightPanelMode === "processing" && (
+                <UploadSection
+                  poId={po.id}
+                  uploadedFiles={po.uploadedFiles}
+                  showUploadArea={false}
+                />
+              )}
+
+              {rightPanelMode === "upload" && (
+                <UploadSection
+                  poId={po.id}
+                  uploadedFiles={po.uploadedFiles}
+                  showUploadArea={true}
+                />
+              )}
+
+              <span className="">AI Data Matching Result</span>
+              <AIMatchingResultPanel result={po} />
+
+              <PermitTypePanel permitTypes={po.permitTypesDetail} />
+
+              <ESTDetailsTableAI
+                estDetails={po.estDetails}
+                showVerification={false}
+                darkHeader={true}
               />
-            )}
+            </div>
           </div>
         </div>
 
         {/* AI Matching Result (shown when files exist) */}
+        {/* 
         {(hasFiles || isCompleted) && po.aiMatchingResult && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ESTDetailsTable
@@ -284,25 +334,30 @@ export default function Detail() {
             />
             <AIMatchingResultPanel result={po.aiMatchingResult} />
           </div>
-        )}
+        )} 
+         */}
 
         {/* EST Details (full width when no AI result) */}
+        {/* 
         {!(hasFiles || isCompleted) && po.estDetails.length > 0 && (
           <ESTDetailsTable
             estDetails={po.estDetails}
             showVerification={true}
             darkHeader={true}
           />
-        )}
+        )} 
+         */}
 
-        {rightPanelMode === 'upload' && po.estDetails.length > 0 && (
+        {/* 
+        {rightPanelMode === "upload" && po.estDetails.length > 0 && (
           <ESTDetailsTable
             estDetails={po.estDetails}
             showVerification={false}
             darkHeader={true}
           />
-        )}
+        )} 
+         */}
       </div>
     </Layout>
-  )
+  );
 }
