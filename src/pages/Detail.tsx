@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import Layout from "../components/layout/Layout";
 import POHeader from "../components/detail/POHeader";
@@ -10,6 +10,7 @@ import UploadedFilesView from "../components/detail/UploadedFilesView";
 import AIMatchingResultPanel from "../components/detail/AIMatchingResultPanel";
 import ESTDetailsTable from "../components/detail/ESTDetailsTable";
 import { jagotaApi } from "../services/jagotaApiService";
+import { useAuth } from "../contexts/AuthContext";
 import type {
   GetDocDetail,
   POEntry,
@@ -168,6 +169,7 @@ function mapGetDocDetailToPoItem(
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { username } = useAuth();
 
   // Parse DOC_BOOK and DOC_NO from id (format: "DOC_BOOK-DOC_NO" e.g. "91-6785")
   const dashIdx = id ? id.indexOf("-") : -1;
@@ -177,6 +179,35 @@ export default function Detail() {
   const [docDetail, setDocDetail] = useState<GetDocDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchDoc = useCallback(async () => {
+    if (!id || dashIdx === -1) {
+      setError("Invalid document ID");
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await jagotaApi.getDoc({
+        COMPANY: "JB",
+        TRANSACTION_TYPE: docBook!,
+        DOC_BOOK: docBook!,
+        DOC_NO: docNo!,
+      });
+
+      if (!result || !result.PO?.length) {
+        setError("Document not found");
+        return;
+      }
+
+      setDocDetail(result);
+    } catch (err: any) {
+      setError(err.message ?? "Failed to load document");
+    } finally {
+      setLoading(false);
+    }
+  }, [id, dashIdx, docBook, docNo]);
 
   // Derive POItem from raw GetDocDetail
   // const po = useMemo(
@@ -188,44 +219,8 @@ export default function Detail() {
   // );
 
   useEffect(() => {
-    if (!id) {
-      setError("Invalid document ID");
-      setLoading(false);
-      return;
-    }
-
-    if (dashIdx === -1) {
-      setError("Invalid document ID format");
-      setLoading(false);
-      return;
-    }
-
-    const fetchDoc = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await jagotaApi.getDoc({
-          COMPANY: "JB",
-          TRANSACTION_TYPE: docBook!,
-          DOC_BOOK: docBook!,
-          DOC_NO: docNo!,
-        });
-
-        if (!result || !result.PO?.length) {
-          setError("Document not found");
-          return;
-        }
-
-        setDocDetail(result);
-      } catch (err: any) {
-        setError(err.message ?? "Failed to load document");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDoc();
-  }, [id]);
+  }, [fetchDoc]);
 
   if (loading) {
     return (
@@ -316,6 +311,13 @@ export default function Detail() {
                   poId={docDetail.UPLOADED_FILES[0]?.RECID ?? ""}
                   uploadedFiles={docDetail.UPLOADED_FILES}
                   showUploadArea={false}
+                  company="JB"
+                  staffCode={username ?? undefined}
+                  transactionType={docBook ?? ""}
+                  docBook={docBook ?? ""}
+                  docNo={docNo ?? ""}
+                  stage="REQUEST"
+                  onRefresh={fetchDoc}
                 />
               )}
 
@@ -324,6 +326,13 @@ export default function Detail() {
                   poId={docDetail.UPLOADED_FILES[0]?.RECID ?? ""}
                   uploadedFiles={docDetail.UPLOADED_FILES}
                   showUploadArea={true}
+                  company="JB"
+                  staffCode={username ?? undefined}
+                  transactionType={docBook ?? ""}
+                  docBook={docBook ?? ""}
+                  docNo={docNo ?? ""}
+                  stage="REQUEST"
+                  onRefresh={fetchDoc}
                 />
               )}
 

@@ -391,9 +391,10 @@ class JagotaApiService {
     /**
      * Apply Permit AI (n8n webhook)
      * POST https://n8n-staging.jagota.com/webhook-test/ApplyPermitAI-toque
-     * Sends a PDF file + form fields with Bearer auth
+     * Sends a PDF file + form fields with Bearer auth.
+     * n8n returns {"message":"Workflow was started"} — treated as success on any 2xx.
      */
-    async applyPermitAI(params: ApplyPermitAIParams, username?: string): Promise<ApiResponse<any>> {
+    async applyPermitAI(params: ApplyPermitAIParams, username?: string): Promise<{ message: string }> {
         const url = `${this.n8nUrl}/ApplyPermitAI-toque`;
         const formData = new FormData();
         formData.append('file_upload', params.file);
@@ -404,10 +405,26 @@ class JagotaApiService {
         formData.append('doc_no', params.doc_no);
         formData.append('stage', params.stage);
 
-        return this.makeFormRequestWithHeaders<any>(url, formData, {
-            Authorization: `Bearer ${this.n8nBearerToken}`,
-            Username: username ?? this.staffCode,
-        });
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${this.n8nBearerToken}`,
+                    Username: username ?? this.staffCode,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // n8n responds with {"message":"Workflow was started"} — just return it
+            return await response.json();
+        } catch (error) {
+            console.error('applyPermitAI failed:', error);
+            throw error;
+        }
     }
 
     /**

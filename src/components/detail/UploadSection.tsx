@@ -1,12 +1,19 @@
-import { useRef, useState } from "react";
-import { Upload, File, Eye, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, File, Eye, Loader2, X, CheckCircle, AlertCircle } from "lucide-react";
 import type { UploadedFileDoc } from "../../types";
-import { useAppStore } from "../../store/useAppStore";
+import { jagotaApi } from "../../services/jagotaApiService";
 
 interface UploadSectionProps {
   poId: string;
   uploadedFiles: UploadedFileDoc[];
   showUploadArea?: boolean;
+  company?: string;
+  staffCode?: string;
+  transactionType?: string;
+  docBook?: string;
+  docNo?: string;
+  stage?: string;
+  onRefresh?: () => void;
 }
 
 function FileStatusIcon({ status }: { status: UploadedFileDoc["STATUS"] }) {
@@ -28,30 +35,62 @@ export default function UploadSection({
   poId,
   uploadedFiles,
   showUploadArea = true,
+  company = "JB",
+  staffCode,
+  transactionType = "",
+  docBook = "",
+  docNo = "",
+  stage = "REQUEST",
+  onRefresh,
 }: UploadSectionProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const { addUploadedFile } = useAppStore();
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
-  const handleFiles = (files: FileList | null) => {
+  // Countdown timer after successful upload
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown === 0) {
+      onRefresh?.();
+      setCountdown(null);
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, onRefresh]);
+
+  const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    Array.from(files).forEach((file) => {
-      if (!file.name.toLowerCase().endsWith(".pdf")) return;
-      const now = new Date();
-      const buddhistYear = now.getFullYear() + 543;
-      const queuedAt = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${buddhistYear} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const pdfs = Array.from(files).filter((f) => f.name.toLowerCase().endsWith(".pdf"));
+    if (pdfs.length === 0) return;
 
-      // const newFile: UploadedFile = {
-      //   id: `f-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      //   fileName: file.name,
-      //   status: 'Processing',
-      //   recordStatus: 'Active',
-      //   queuedAt,
-      //   finishedAt: undefined,
-      // }
-      // addUploadedFile(poId, newFile)
-    });
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      for (const file of pdfs) {
+        await jagotaApi.applyPermitAI({
+          file,
+          staff_code: staffCode ?? jagotaApi.getStaffCode(),
+          company,
+          transaction_type: transactionType,
+          doc_book: docBook,
+          doc_no: docNo,
+          stage,
+        });
+      }
+      // Start 10-second countdown then refresh
+      setCountdown(10);
+    } catch (err: any) {
+      setUploadError(err.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      // Reset input so same file can be re-selected
+      if (inputRef.current) inputRef.current.value = "";
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -62,8 +101,40 @@ export default function UploadSection({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4">
+      {/* Uploading overlay */}
+      {uploading && (
+        <div className="flex flex-col items-center justify-center gap-3 py-6">
+          <Loader2 size={32} className="text-blue-500 animate-spin" />
+          <p className="text-sm font-semibold text-gray-600">Uploading file...</p>
+        </div>
+      )}
+
+      {/* Upload success countdown */}
+      {countdown !== null && (
+        <div className="flex flex-col items-center justify-center gap-2 py-4 bg-green-50 rounded-xl border border-green-200">
+          <CheckCircle size={28} className="text-green-500" />
+          <p className="text-sm font-semibold text-green-700">Upload successful!</p>
+          <p className="text-xs text-gray-500">
+            Refreshing data in <span className="font-bold text-green-700">{countdown}s</span>...
+          </p>
+        </div>
+      )}
+
+      {/* Upload error */}
+      {uploadError && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-red-50 rounded-xl border border-red-200">
+          <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+          <p className="text-sm text-red-600">{uploadError}</p>
+          <button
+            className="ml-auto text-xs text-red-400 hover:text-red-600 underline"
+            onClick={() => setUploadError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {/* Upload area */}
-      {showUploadArea && (
+      {showUploadArea && !uploading && countdown === null && (
         <div>
           <h3 className="text-sm font-bold text-gray-700 mb-3">
             Upload New Files
