@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import Layout from "../components/layout/Layout";
 import POHeader from "../components/detail/POHeader";
@@ -111,12 +111,20 @@ function mapGetDocDetailToPoItem(
   docNo: string,
 ): POItem {
   const po = detail.PO?.[0];
-  const hasAITariffs = (detail.AI_PO_TARIFF?.length ?? 0) > 0;
+  const hasAITariffs = (detail.PO_TARIFF?.length ?? 0) > 0;
+  const hasAITariffs_AI = (detail.AI_PO_TARIFF?.length ?? 0) > 0;
   const hasAISlaughter = (detail.AI_SUP_SLAUGHTERHOUSE?.length ?? 0) > 0;
 
   const permitTypesDetail = hasAITariffs
-    ? mapPermitTypesFromAI(detail.AI_PO_TARIFF)
-    : mapPermitTypes(detail.PO_TARIFF ?? []);
+    ? mapPermitTypes(detail.PO_TARIFF ?? [])
+    : [];
+
+  const permitTypesDetail_AI = hasAITariffs_AI
+    ? mapPermitTypesFromAI(detail.AI_PO_TARIFF ?? [])
+    : [];
+
+  // ? mapPermitTypesFromAI(detail.AI_PO_TARIFF)
+  // : mapPermitTypes(detail.PO_TARIFF ?? []);
 
   const estDetails = hasAISlaughter
     ? mapEstDetailsFromAI(detail.AI_SUP_SLAUGHTERHOUSE)
@@ -150,7 +158,8 @@ function mapGetDocDetailToPoItem(
     buyerCode: "",
     poApprovalDate: po?.APPROVE_DATE ?? "",
     products: po ? mapProducts(po) : [],
-    permitTypesDetail,
+    permitTypesDetail: permitTypesDetail,
+    permitTypesDetail_AI: permitTypesDetail_AI,
     estDetails,
     uploadedFiles: [],
   };
@@ -160,9 +169,23 @@ export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [po, setPo] = useState<POItem | null>(null);
+  // Parse DOC_BOOK and DOC_NO from id (format: "DOC_BOOK-DOC_NO" e.g. "91-6785")
+  const dashIdx = id ? id.indexOf("-") : -1;
+  const docBook = dashIdx !== -1 ? id!.substring(0, dashIdx) : null;
+  const docNo = dashIdx !== -1 ? id!.substring(dashIdx + 1) : null;
+
+  const [docDetail, setDocDetail] = useState<GetDocDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Derive POItem from raw GetDocDetail
+  // const po = useMemo(
+  //   () =>
+  //     docDetail && docBook && docNo
+  //       ? mapGetDocDetailToPoItem(docDetail, docBook, docNo)
+  //       : null,
+  //   [docDetail, docBook, docNo],
+  // );
 
   useEffect(() => {
     if (!id) {
@@ -171,16 +194,11 @@ export default function Detail() {
       return;
     }
 
-    // id format: DOC_BOOK-DOC_NO  e.g. "91-6785"
-    const dashIdx = id.indexOf("-");
     if (dashIdx === -1) {
       setError("Invalid document ID format");
       setLoading(false);
       return;
     }
-
-    const docBook = id.substring(0, dashIdx);
-    const docNo = id.substring(dashIdx + 1);
 
     const fetchDoc = async () => {
       try {
@@ -188,9 +206,9 @@ export default function Detail() {
         setError(null);
         const result = await jagotaApi.getDoc({
           COMPANY: "JB",
-          TRANSACTION_TYPE: docBook,
-          DOC_BOOK: docBook,
-          DOC_NO: docNo,
+          TRANSACTION_TYPE: docBook!,
+          DOC_BOOK: docBook!,
+          DOC_NO: docNo!,
         });
 
         if (!result || !result.PO?.length) {
@@ -198,7 +216,7 @@ export default function Detail() {
           return;
         }
 
-        setPo(mapGetDocDetailToPoItem(result, docBook, docNo));
+        setDocDetail(result);
       } catch (err: any) {
         setError(err.message ?? "Failed to load document");
       } finally {
@@ -225,7 +243,7 @@ export default function Detail() {
     );
   }
 
-  if (error || !po) {
+  if (error || !docDetail) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-64 gap-4">
@@ -241,8 +259,8 @@ export default function Detail() {
     );
   }
 
-  const isCompleted = po.status === "Completed";
-  const hasFiles = po.uploadedFiles.length > 0;
+  const isCompleted = docDetail.STAGE === "Completed";
+  const hasFiles = docDetail.UPLOADED_FILES.length > 0;
 
   const rightPanelMode: "view-only" | "processing" | "upload" = isCompleted
     ? "view-only"
@@ -263,7 +281,7 @@ export default function Detail() {
         </button>
 
         {/* PO Info Header */}
-        <POHeader po={po} />
+        <POHeader po={docDetail} />
 
         {/* Main 2-column content */}
 
@@ -271,15 +289,15 @@ export default function Detail() {
           <div className="flex flex-col">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {/* Col 1: Products */}
-              <ProductsList products={po.products} />
+              <ProductsList products={docDetail.PO[0].PO_DETAILS} />
 
               {/* Col 2: Permit Type */}
-              <PermitTypePanel permitTypes={po.permitTypesDetail} />
+              <PermitTypePanel permitTypes={docDetail.PO_TARIFF} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-1 gap-5 mt-5">
               <ESTDetailsTable
-                estDetails={po.estDetails}
+                estDetails={docDetail.SUP_SLAUGHTERHOUSE}
                 showVerification={false}
                 darkHeader={true}
               />
@@ -290,73 +308,29 @@ export default function Detail() {
             {/* Col 3: Upload / Files */}
             <div className="flex flex-col gap-4">
               {rightPanelMode === "view-only" && (
-                <UploadedFilesView files={po.uploadedFiles} />
+                <UploadedFilesView files={docDetail.UPLOADED_FILES} />
               )}
 
               {rightPanelMode === "processing" && (
                 <UploadSection
-                  poId={po.id}
-                  uploadedFiles={po.uploadedFiles}
+                  poId={docDetail.UPLOADED_FILES[0]?.RECID ?? ""}
+                  uploadedFiles={docDetail.UPLOADED_FILES}
                   showUploadArea={false}
                 />
               )}
 
               {rightPanelMode === "upload" && (
                 <UploadSection
-                  poId={po.id}
-                  uploadedFiles={po.uploadedFiles}
+                  poId={docDetail.UPLOADED_FILES[0]?.RECID ?? ""}
+                  uploadedFiles={docDetail.UPLOADED_FILES}
                   showUploadArea={true}
                 />
               )}
 
-              <span className="">AI Data Matching Result</span>
-              <AIMatchingResultPanel result={po} />
-
-              <PermitTypePanel permitTypes={po.permitTypesDetail} />
-
-              <ESTDetailsTableAI
-                estDetails={po.estDetails}
-                showVerification={false}
-                darkHeader={true}
-              />
+              <AIMatchingResultPanel result={docDetail} />
             </div>
           </div>
         </div>
-
-        {/* AI Matching Result (shown when files exist) */}
-        {/* 
-        {(hasFiles || isCompleted) && po.aiMatchingResult && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <ESTDetailsTable
-              estDetails={po.estDetails}
-              showVerification={true}
-              darkHeader={true}
-            />
-            <AIMatchingResultPanel result={po.aiMatchingResult} />
-          </div>
-        )} 
-         */}
-
-        {/* EST Details (full width when no AI result) */}
-        {/* 
-        {!(hasFiles || isCompleted) && po.estDetails.length > 0 && (
-          <ESTDetailsTable
-            estDetails={po.estDetails}
-            showVerification={true}
-            darkHeader={true}
-          />
-        )} 
-         */}
-
-        {/* 
-        {rightPanelMode === "upload" && po.estDetails.length > 0 && (
-          <ESTDetailsTable
-            estDetails={po.estDetails}
-            showVerification={false}
-            darkHeader={true}
-          />
-        )} 
-         */}
       </div>
     </Layout>
   );

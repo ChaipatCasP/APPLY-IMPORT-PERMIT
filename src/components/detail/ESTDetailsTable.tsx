@@ -1,10 +1,10 @@
-import { CheckCircle, XCircle } from 'lucide-react'
-import type { ESTDetail } from '../../types'
+import { CheckCircle, XCircle } from "lucide-react";
+import type { SupSlaughterhouse } from "../../types";
 
 interface ESTDetailsTableProps {
-  estDetails: ESTDetail[]
-  showVerification?: boolean
-  darkHeader?: boolean
+  estDetails: SupSlaughterhouse[];
+  showVerification?: boolean;
+  darkHeader?: boolean;
 }
 
 export default function ESTDetailsTable({
@@ -12,12 +12,12 @@ export default function ESTDetailsTable({
   showVerification = true,
   darkHeader = true,
 }: ESTDetailsTableProps) {
-  const count = estDetails.length
+  const count = estDetails.length;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       {/* Header */}
-      <div className={`px-4 py-3 ${darkHeader ? 'bg-gray-700' : 'bg-red-700'}`}>
+      <div className={`px-4 py-3 ${darkHeader ? "bg-gray-700" : "bg-red-700"}`}>
         <h3 className="text-white font-bold text-sm">
           EST Details : Total {count}
         </h3>
@@ -27,7 +27,7 @@ export default function ESTDetailsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
+            <tr className="border-b border-gray-200 bg-[#e7eaed]">
               <th className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Plant Name
               </th>
@@ -64,38 +64,38 @@ export default function ESTDetailsTable({
                 </td>
               </tr>
             ) : (
-              estDetails.map((est) => (
+              estDetails.map((est, index) => (
                 <tr
-                  key={est.id}
+                  key={index}
                   className="border-b border-gray-100 hover:bg-gray-50"
                 >
                   <td className="px-3 py-2.5 text-sm font-medium text-gray-700">
-                    {est.plantName}
+                    {est.NAME_E}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-gray-600">
-                    {est.estNo}
+                    {est.EST}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-gray-600">
-                    {est.address}
+                    {est.ADDRESS}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-gray-600">
-                    {est.city}
+                    {est.CITY}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-gray-600">
-                    {est.country}
+                    {est.COUNTRY}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-gray-600">
-                    {est.plantLicenseNo}
+                    {est.PLANT_LICENSED_NO}
                   </td>
-                  {showVerification && (
+                  {/* {showVerification && (
                     <td className="px-3 py-2.5">
-                      {est.verified ? (
+                      {est.VERIFIED ? (
                         <CheckCircle size={18} className="text-green-500" />
                       ) : (
                         <XCircle size={18} className="text-red-500" />
                       )}
                     </td>
-                  )}
+                  )} */}
                 </tr>
               ))
             )}
@@ -103,5 +103,5 @@ export default function ESTDetailsTable({
         </table>
       </div>
     </div>
-  )
+  );
 }

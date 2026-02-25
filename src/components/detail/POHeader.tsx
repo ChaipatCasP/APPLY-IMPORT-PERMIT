@@ -1,89 +1,112 @@
-import { format } from 'date-fns'
-import type { POItem } from '../../types'
-import StatusBadge from '../dashboard/StatusBadge'
+import { format } from "date-fns";
+import type { GetDocDetail } from "../../types";
+import StatusBadge from "../dashboard/StatusBadge";
 
 interface POHeaderProps {
-  po: POItem
-  onComplete?: () => void
+  po: GetDocDetail;
+  onComplete?: () => void;
 }
 
 function formatDate(dateStr: string) {
   try {
-    return format(new Date(dateStr), 'dd-MM-yyyy')
+    return format(new Date(dateStr), "dd-MM-yyyy");
   } catch {
-    return dateStr
+    return dateStr;
   }
 }
 
 export default function POHeader({ po, onComplete }: POHeaderProps) {
-  const isComplete = po.status === 'Completed'
+  const isComplete = po.STAGE === "Completed";
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-4">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-4 ">
       {/* Row 1 */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-wrap gap-x-6 gap-y-1">
-          <span className="text-sm">
-            <span className="text-blue-600 font-semibold">PO No.</span>{' '}
-            <span className="font-bold text-blue-700">{po.poNumber}</span>
-          </span>
-          <span className="text-sm text-blue-600">
-            Date: <span className="font-semibold">{formatDate(po.date)}</span>
-          </span>
-          <span className="text-sm text-blue-600">
-            ETD: <span className="font-semibold">{formatDate(po.etd)}</span>
-          </span>
-          <span className="text-sm text-blue-600">
-            Origin: <span className="font-semibold">{po.origin}</span>
-          </span>
-          <span className="text-sm text-blue-600">
-            Temp:{' '}
-            <span className="font-semibold text-blue-700">{po.temp}</span>
-          </span>
-          <span className="text-sm text-blue-600">
-            Buyer: <span className="font-semibold">{po.buyer}</span>
-          </span>
+      <div className="flex flex-row ">
+        <div className="w-[90%]">
+          <div className="flex flex-wrap gap-x-6 gap-y-1 w-full">
+            <span className="text-sm text-blue-600 w-[15%]">
+              PO No. <span className="font-semibold">{po.PO?.[0]?.PO_DOC}</span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              Date :{" "}
+              <span className="font-semibold">
+                {formatDate(po.PO?.[0]?.PO_DATE ?? "")}
+              </span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              ETD :{" "}
+              <span className="font-semibold">
+                {formatDate(po.PO?.[0]?.ETD ?? "")}
+              </span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              Origin :{" "}
+              <span className="font-semibold">
+                {po.PO?.[0]?.COUNTRY_ORIGIN}
+              </span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              Temp :{" "}
+              <span className="font-semibold">
+                {po.PO?.[0]?.PRODUCT_TEMPERATURE}
+              </span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              Buyer: <span className="font-semibold">{po.PO?.[0]?.BUYER}</span>
+            </span>
+          </div>
+
+          {/* Row 2 */}
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 w-full">
+            <span className="text-sm text-blue-600 font-semibold w-[15%]">
+              {po.PO?.[0]?.SUPP_NAME} ({po.PO?.[0]?.SUP_CODE})
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              ETA :{" "}
+              <span className="font-semibold">
+                {formatDate(po.PO?.[0]?.ETA ?? "")}
+              </span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              Transport :{" "}
+              <span className="font-semibold ">
+                {po.PO?.[0]?.TRANSPORT_MODE === "Sea"
+                  ? "Sea Freight"
+                  : "Air Freight"}
+              </span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              Port :{" "}
+              <span className="font-semibold">
+                {po.PO?.[0]?.PORT_OF_ORIGIN}
+              </span>
+            </span>
+            <span className="text-sm text-blue-600 w-[15%]">
+              PO Approval date :{" "}
+              <span className="font-semibold ">
+                {formatDate(po.PO?.[0]?.APPROVE_DATE ?? "")}
+              </span>
+            </span>
+          </div>
         </div>
 
-        {/* Status / Action */}
-        <div className="flex-shrink-0">
-          {isComplete ? (
-            <button
-              onClick={onComplete}
-              disabled
-              className="bg-green-600 text-white font-bold px-6 py-2 rounded-lg text-sm cursor-default"
-            >
-              Complete
-            </button>
-          ) : (
-            <StatusBadge status={po.status} size="md" />
-          )}
+        <div className="w-[10%] text-center flex items-center justify-center">
+          {/* Status / Action */}
+          <div className="flex-shrink-0">
+            {isComplete ? (
+              <button
+                onClick={onComplete}
+                disabled
+                className="bg-green-600 text-white font-bold px-6 py-2 rounded-lg text-sm cursor-default"
+              >
+                Complete
+              </button>
+            ) : (
+              <StatusBadge status={po.STAGE} size="md" />
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Row 2 */}
-      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2">
-        <span className="text-sm text-blue-600 font-semibold">
-          {po.supplier} ({po.supplierCode})
-        </span>
-        <span className="text-sm text-gray-500">
-          ETA: <span className="font-semibold text-blue-600">{formatDate(po.eta)}</span>
-        </span>
-        <span className="text-sm text-gray-500">
-          Transport:{' '}
-          <span className="font-semibold text-blue-600">{po.freight}</span>
-        </span>
-        <span className="text-sm text-gray-500">
-          Port:{' '}
-          <span className="font-semibold text-blue-600">{po.port}</span>
-        </span>
-        <span className="text-sm text-gray-500">
-          PO Approval date:{' '}
-          <span className="font-semibold text-blue-600">
-            {formatDate(po.poApprovalDate)}
-          </span>
-        </span>
       </div>
     </div>
-  )
+  );
 }

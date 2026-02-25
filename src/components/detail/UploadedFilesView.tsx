@@ -1,8 +1,8 @@
-import { FileText } from 'lucide-react'
-import type { UploadedFile } from '../../types'
+import { FileText } from "lucide-react";
+import type { UploadedFileDoc } from "../../types";
 
 interface UploadedFilesViewProps {
-  files: UploadedFile[]
+  files: UploadedFileDoc[];
 }
 
 export default function UploadedFilesView({ files }: UploadedFilesViewProps) {
@@ -16,8 +16,11 @@ export default function UploadedFilesView({ files }: UploadedFilesViewProps) {
         </div>
       ) : (
         <div className="flex flex-wrap gap-4">
-          {files.map((f) => (
-            <div key={f.id} className="flex flex-col items-center gap-1 cursor-pointer group">
+          {files.map((f, index) => (
+            <div
+              key={index}
+              className="flex flex-col items-center gap-1 cursor-pointer group"
+            >
               <div className="w-12 h-14 bg-red-50 border-2 border-red-200 rounded-lg flex items-center justify-center group-hover:border-red-400 transition-colors">
                 <FileText size={24} className="text-red-500" />
               </div>
@@ -29,5 +32,5 @@ export default function UploadedFilesView({ files }: UploadedFilesViewProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

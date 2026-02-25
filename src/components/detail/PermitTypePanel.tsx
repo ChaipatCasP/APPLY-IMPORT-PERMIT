@@ -1,16 +1,19 @@
-import { CheckCircle } from 'lucide-react'
-import type { PermitType } from '../../types'
+import { CheckCircle } from "lucide-react";
+import type { POTariff } from "../../types";
 
 interface PermitTypePanelProps {
-  permitTypes: PermitType[]
+  permitTypes: POTariff[];
 }
 
 export default function PermitTypePanel({ permitTypes }: PermitTypePanelProps) {
-  const totalQty = permitTypes.reduce((acc, p) => acc + p.quantity, 0)
-  const count = permitTypes.length
+  const totalQty = permitTypes.reduce(
+    (acc, p) => acc + (parseFloat(p.QTY) || 0),
+    0,
+  );
+  const count = permitTypes.length;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
       {/* Header */}
       <div className="bg-red-700 px-4 py-3">
         <h3 className="text-white font-bold text-sm">
@@ -19,25 +22,36 @@ export default function PermitTypePanel({ permitTypes }: PermitTypePanelProps) {
       </div>
 
       {/* Permit Type list */}
-      <div className="p-4 flex flex-col gap-3">
+      <div className="p-4 flex flex-col gap-3 flex-1 overflow-auto">
         {permitTypes.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">
             No permit types
           </p>
         ) : (
-          permitTypes.map((pt) => (
-            <div key={pt.id} className="flex items-center justify-between gap-2">
+          permitTypes.map((pt, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-2"
+            >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800">
-                  {pt.description}
+                  {pt.TARIFF_NAME_EN || pt.TARIFF_NAME_TH || "N/A"}
+                  {
+                    <span className="text-xs text-gray-500 ml-1">
+                      ({pt.TARIFF_NAME_TH})
+                    </span>
+                  }
                 </p>
-                <p className="text-xs text-gray-500">{pt.tariffCode}</p>
+                <p className="text-xs text-gray-500">{pt.TARIFF_CODE}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-gray-700 whitespace-nowrap">
-                  {pt.quantity} kg
+                  {Number(pt.QTY).toLocaleString()} {pt.UNIT}
                 </span>
-                <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
+                <CheckCircle
+                  size={18}
+                  className="text-green-500 flex-shrink-0"
+                />
               </div>
             </div>
           ))
@@ -48,10 +62,10 @@ export default function PermitTypePanel({ permitTypes }: PermitTypePanelProps) {
       {permitTypes.length > 0 && (
         <div className="px-4 py-3 border-t border-gray-100 text-right">
           <span className="text-sm font-bold text-gray-700">
-            Total Qty : {totalQty} kg
+            Total Qty : {totalQty.toLocaleString()} {permitTypes[0].UNIT}
           </span>
         </div>
       )}
     </div>
-  )
+  );
 }

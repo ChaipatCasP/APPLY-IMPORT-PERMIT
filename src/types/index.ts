@@ -100,6 +100,7 @@ export interface POItem {
   poApprovalDate: string
   products: Product[]
   permitTypesDetail: PermitType[]
+  permitTypesDetail_AI: PermitType[]
   estDetails: ESTDetail[]
   uploadedFiles: UploadedFile[]
   aiMatchingResult?: AIMatchingResult
