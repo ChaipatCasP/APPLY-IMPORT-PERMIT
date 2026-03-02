@@ -17,6 +17,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      // Proxy /Apip for form+custom-header requests (REVISE_JOB, REVISE_LIST, REVISE_CANCEL, etc.)
+      '/Apip': {
+        target: 'https://api-staging.jagota.com',
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 })

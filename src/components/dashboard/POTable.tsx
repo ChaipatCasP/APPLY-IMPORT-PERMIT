@@ -31,7 +31,7 @@ function FreightIcon({ freight }: { freight: string }) {
 
 function formatDate(dateStr: string): string {
   try {
-    return format(new Date(dateStr), 'MMM dd, yyyy')
+    return format(new Date(dateStr), 'dd MMM yyyy')
   } catch {
     return dateStr
   }
@@ -108,7 +108,7 @@ function TableRow({ item, onClick }: TableRowProps) {
 
       {/* Request Doc No. Date */}
       <td className="px-4 py-3 text-sm text-gray-600">
-        {item.requestDocNoDate ? formatDate(item.requestDocNoDate) : item.quantity.toFixed(2)}
+        {item.requestDocNoDate ? formatDate(item.requestDocNoDate) : item.requestDocNoDate || '-'}
       </td>
 
       {/* Status */}

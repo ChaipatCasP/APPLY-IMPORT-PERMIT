@@ -64,15 +64,7 @@ export default function AIMatchingResultPanel({
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  {[
-                    "Plant Name",
-                    "EST No.",
-                    "Address",
-                    "City",
-                    "Country",
-                    "Plant License No.",
-                    "",
-                  ].map((col) => (
+                  {["Plant Name", "EST No.", "Address"].map((col) => (
                     <th
                       key={col}
                       className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide"
@@ -96,23 +88,6 @@ export default function AIMatchingResultPanel({
                     </td>
                     <td className="px-3 py-2.5 text-sm text-gray-600">
                       {est.ADDRESS}
-                    </td>
-                    <td className="px-3 py-2.5 text-sm text-gray-600">
-                      {/* {est.CITY} */} N/A
-                    </td>
-                    <td className="px-3 py-2.5 text-sm text-gray-600">
-                      {/* {est.country} */} N/A
-                    </td>
-                    <td className="px-3 py-2.5 text-sm text-gray-600">
-                      {/* {est.plantLicenseNo} */} N/A
-                    </td>
-                    <td className="px-3 py-2.5">
-                      {/* {est.verified ? (
-                      <CheckCircle size={18} className="text-green-500" />
-                    ) : (
-                      <XCircle size={18} className="text-red-500" />
-                    )} */}
-                      N/A
                     </td>
                   </tr>
                 ))}

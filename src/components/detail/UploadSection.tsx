@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { UploadedFileDoc, GetDocDetail } from "../../types";
 import { jagotaApi } from "../../services/jagotaApiService";
+import type { ReviseListResult } from "../../services/jagotaApiService";
 
 interface UploadSectionProps {
   poId: string;
@@ -59,6 +60,44 @@ export default function UploadSection({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [reviseListOptions, setReviseListOptions] = useState<
+    ReviseListResult[]
+  >([]);
+  const [reviseListLoading, setReviseListLoading] = useState(false);
+  const [selectedRevision, setSelectedRevision] = useState<string>(
+    docDetail?.REVISION ?? "",
+  );
+  const [revising, setRevising] = useState(false);
+  const [reviseError, setReviseError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  // Sync selectedRevision when docDetail.REVISION changes
+  useEffect(() => {
+    if (docDetail?.REVISION !== undefined) {
+      setSelectedRevision(docDetail.REVISION);
+    }
+  }, [docDetail?.REVISION]);
+
+  // alert(poId);
+  // Fetch REVISE_LIST when status is Fail
+  useEffect(() => {
+    // if (uploadedFiles[0]?.STATUS !== "Fail") return;
+    setReviseListLoading(true);
+    jagotaApi
+      .reviseList({
+        P_STAFF_CODE: staffCode ?? jagotaApi.getStaffCode(),
+        P_COMPANY: company,
+        P_TRANSACTION_TYPE: transactionType,
+        P_DOC_BOOK: docBook,
+        P_DOC_NO: docNo,
+        P_STAGE: stage,
+      })
+      .then((res) => setReviseListOptions(res.result ?? []))
+      .catch(() => setReviseListOptions([]))
+      .finally(() => setReviseListLoading(false));
+  }, []);
+  // }, [uploadedFiles[0]?.STATUS]);
 
   // Countdown timer — on reaching 0, call getDoc and compare UPLOADED_FILES
   useEffect(() => {
@@ -137,13 +176,53 @@ export default function UploadSection({
       }
       // Start 10-second countdown then refresh
       // setCountdown(10);
-      setTimeout(() => onRefresh?.(), 500);
+      setTimeout(() => onRefresh?.(), 1000);
     } catch (err: any) {
       setUploadError(err.message ?? "Upload failed");
     } finally {
       setUploading(false);
       // Reset input so same file can be re-selected
       if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  const handleReviseJob = async () => {
+    setReviseError(null);
+    setRevising(true);
+    try {
+      await jagotaApi.reviseJob({
+        P_STAFF_CODE: staffCode ?? jagotaApi.getStaffCode(),
+        P_COMPANY: company,
+        P_TRANSACTION_TYPE: transactionType,
+        P_DOC_BOOK: docBook,
+        P_DOC_NO: docNo,
+        P_STAGE: stage,
+      });
+      onRefresh?.();
+    } catch (err: any) {
+      setReviseError(err.message ?? "Revise job failed");
+    } finally {
+      setRevising(false);
+    }
+  };
+
+  const handleReviseCancel = async () => {
+    setCancelError(null);
+    setCancelling(true);
+    try {
+      await jagotaApi.reviseCancel({
+        P_STAFF_CODE: staffCode ?? jagotaApi.getStaffCode(),
+        P_COMPANY: company,
+        P_TRANSACTION_TYPE: transactionType,
+        P_DOC_BOOK: docBook,
+        P_DOC_NO: docNo,
+        P_STAGE: stage,
+      });
+      onRefresh?.();
+    } catch (err: any) {
+      setCancelError(err.message ?? "Cancel revise failed");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -246,9 +325,75 @@ export default function UploadSection({
       {/* Uploaded files */}
       {uploadedFiles.length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-gray-700 mb-3">
-            Uploaded Files
-          </h3>
+          <div className="flex flex-row justify-between p-2">
+            <div>
+              {" "}
+              <h3 className="text-sm font-bold text-gray-700 mb-3">
+                Uploaded Files
+              </h3>
+            </div>
+            <div className="flex flex-row gap-1.5">
+              {/* {uploadedFiles[0]?.STATUS === "Fail" && ( */}
+              {uploadedFiles[0]?.STATUS === "Done" && (
+                <select
+                  className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-[160px]"
+                  value={selectedRevision}
+                  onChange={(e) => setSelectedRevision(e.target.value)}
+                >
+                  <option value="" disabled>
+                    {reviseListLoading ? "Loading..." : "Select Revision No."}
+                  </option>
+                  {reviseListOptions.map((item, i) => (
+                    <option key={i} value={item.REVISION_NO}>
+                      Revision {item.REVISION_NO}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* {uploadedFiles[0]?.STATUS === "Fail" && ( */}
+              {uploadedFiles[0]?.STATUS === "Done" && (
+                <button
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[#f57733] hover:bg-[#ec5b0d] active:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                  onClick={handleReviseJob}
+                  disabled={revising}
+                >
+                  {revising ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" /> Revising...
+                    </>
+                  ) : (
+                    "Revise Job"
+                  )}
+                </button>
+              )}
+
+              {/* {uploadedFiles[0]?.STATUS === "Fail" && ( */}
+              {uploadedFiles[0]?.STATUS === "Done" && (
+                <button
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                  onClick={handleReviseCancel}
+                  disabled={cancelling}
+                >
+                  {cancelling ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />{" "}
+                      Cancelling...
+                    </>
+                  ) : (
+                    "Cancel Revise"
+                  )}
+                </button>
+              )}
+              {reviseError && (
+                <p className="text-xs text-red-500 mt-1">{reviseError}</p>
+              )}
+              {cancelError && (
+                <p className="text-xs text-red-500 mt-1">{cancelError}</p>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
             {uploadedFiles.map((f, index) => (
               <div

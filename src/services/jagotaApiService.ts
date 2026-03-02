@@ -158,6 +158,10 @@ export interface ReviseParams {
     P_STAGE: string;
 }
 
+export interface ReviseListResult {
+    REVISION_NO: string;
+}
+
 export type ReviseListParams = ReviseParams;
 export type ReviseCancelParams = ReviseParams;
 
@@ -432,7 +436,7 @@ class JagotaApiService {
      * POST /Apip/ws_ai_apply_permit/REVISE_JOB/
      */
     async reviseJob(params: ReviseParams, username?: string): Promise<ApiResponse<any>> {
-        const url = `${this.baseUrl}/Apip/ws_ai_apply_permit/REVISE_JOB/`;
+        const url = `/Apip/ws_ai_apply_permit/REVISE_JOB/`;
         const formData = new FormData();
         formData.append('P_STAFF_CODE', params.P_STAFF_CODE);
         formData.append('P_COMPANY', params.P_COMPANY);
@@ -450,8 +454,8 @@ class JagotaApiService {
      * Revise List
      * POST /Apip/ws_ai_apply_permit/REVISE_LIST/
      */
-    async reviseList(params: ReviseListParams, username?: string): Promise<ApiResponse<any>> {
-        const url = `${this.baseUrl}/Apip/ws_ai_apply_permit/REVISE_LIST/`;
+    async reviseList(params: ReviseListParams, username?: string): Promise<ApiResponse<ReviseListResult>> {
+        const url = `/Apip/ws_ai_apply_permit/REVISE_LIST/`;
         const formData = new FormData();
         formData.append('P_STAFF_CODE', params.P_STAFF_CODE);
         formData.append('P_COMPANY', params.P_COMPANY);
@@ -470,7 +474,7 @@ class JagotaApiService {
      * POST /Apip/ws_ai_apply_permit/REVISE_CANCEL/
      */
     async reviseCancel(params: ReviseCancelParams, username?: string): Promise<ApiResponse<any>> {
-        const url = `${this.baseUrl}/Apip/ws_ai_apply_permit/REVISE_CANCEL/`;
+        const url = `/Apip/ws_ai_apply_permit/REVISE_CANCEL/`;
         const formData = new FormData();
         formData.append('P_STAFF_CODE', params.P_STAFF_CODE);
         formData.append('P_COMPANY', params.P_COMPANY);
